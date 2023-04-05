@@ -8,7 +8,7 @@ import { exclude } from '@/utils/prisma-utils';
 
 async function getAddressFromCEP(cep: string) {
   const result = await request.get(`${process.env.VIA_CEP_API}/${cep}/json/`);
-  if (!result.data) {
+  if (!result.data || result.data.erro) {
     throw notFoundError();
   }
   const data = result.data as ViaCEPAddress;
@@ -50,9 +50,10 @@ type GetAddressResult = Omit<Address, 'createdAt' | 'updatedAt' | 'enrollmentId'
 async function createOrUpdateEnrollmentWithAddress(params: CreateOrUpdateEnrollmentWithAddress) {
   const enrollment = exclude(params, 'address');
   const address = getAddressForUpsert(params.address);
+  const { cep } = address;
 
   try {
-    await getAddressFromCEP();
+    await getAddressFromCEP(cep);
   } catch {
     throw invalidDataError(['invalid CEP']);
   }
